@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI Image Classification</title>
+  
+  <!-- Bootstrap CSS -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+  <!-- Animate CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+  <style>
+    /* General Styling */
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(120deg, #a1c4fd, #c2e9fb);
+      text-align: center;
+      transition: all 0.5s ease-in-out;
+      min-height: 100vh;
+    }
+
+    /* Navbar */
+    .navbar {
+      background: rgba(52, 58, 64, 0.8);
+      padding: 15px;
+    }
+    .navbar a {
+      color: white !important;
+      font-weight: 600;
+      transition: 0.3s;
+    }
+    .navbar a:hover {
+      color: #ffcc00 !important;
+    }
+
+    /* Hero Section */
+    .hero {
+      height: 60vh;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      padding: 20px;
+      text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.7);
+    }
+    .hero h1 {
+      font-size: 3rem;
+      font-weight: 700;
+      animation: fadeInDown 1s;
+    }
+    .hero p {
+      font-size: 1.2rem;
+      margin-top: 10px;
+      animation: fadeInUp 1s;
+    }
+    .hero button {
+      margin-top: 20px;
+      padding: 12px 25px;
+      font-size: 1.2rem;
+      border-radius: 30px;
+      background: #ffcc00;
+      color: #333;
+      border: none;
+      transition: 0.3s;
+    }
+    .hero button:hover {
+      background: #ffaa00;
+    }
+
+    /* Encouraging Messages */
+    .message-container {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: white;
+      text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.7);
+      margin: 20px auto;
+      max-width: 600px;
+      animation: fadeInUp 2s ease-in-out;
+    }
+
+    /* Webcam Container */
+    #webcam-container {
+      margin: 20px auto;
+      width: 300px;
+      height: 300px;
+      border-radius: 15px;
+      overflow: hidden;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+      border: 3px solid #ffcc00;
+    }
+
+    /* Label Container */
+    #label-container {
+      margin-top: 20px;
+      padding: 15px;
+      background-color: white;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      font-size: 1.2rem;
+      font-weight: 600;
+      text-align: center;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Footer */
+    footer {
+      background: rgba(52, 58, 64, 0.8);
+      color: white;
+      text-align: center;
+      padding: 15px;
+      margin-top: 30px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="navbar navbar-expand-lg">
+    <div class="container">
+      <a class="navbar-brand" href="#">AI Image Classification</a>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <h1 class="animate__animated animate__fadeInDown">AI Image Recognition</h1>
+    <p class="animate__animated animate__fadeInUp">Analyze images in real-time using Machine Learning</p>
+    <button onclick="init()">Start Now</button>
+  </section>
+
+  <!-- Encouraging Messages -->
+  <div class="message-container animate__animated animate__fadeInUp" id="message">
+    You are strong and capable. No matter the results, you are valued and loved. 💙
+  </div>
+
+  <!-- Main Content -->
+  <div class="container content">
+    <p class="lead">Click the button below to start the camera and analyze images.</p>
+    <button type="button" class="btn btn-warning btn-lg" onclick="init()">Start</button>
+    <div id="webcam-container" class="animate__animated animate__zoomIn"></div>
+    <div id="label-container" class="animate__animated animate__fadeIn"></div>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    &copy; 2025 AI Image Recognition | All Rights Reserved.
+  </footer>
+
+  <!-- TensorFlow and Teachable Machine -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+  
+  <script>
+    // Model URL
+    const URL = "https://teachablemachine.withgoogle.com/models/1IxODqml8/";
+
+    let model, webcam, labelContainer, maxPredictions;
+
+    // Load the model and setup webcam
+    async function init() {
+      const modelURL = URL + "model.json";
+      const metadataURL = URL + "metadata.json";
+
+      model = await tmImage.load(modelURL, metadataURL);
+      maxPredictions = model.getTotalClasses();
+
+      // Setup webcam
+      const flip = true;
+      webcam = new tmImage.Webcam(300, 300, flip);
+      await webcam.setup();
+      await webcam.play();
+      window.requestAnimationFrame(loop);
+
+      document.getElementById("webcam-container").appendChild(webcam.canvas);
+      labelContainer = document.getElementById("label-container");
+      for (let i = 0; i < maxPredictions; i++) {
+        labelContainer.appendChild(document.createElement("div"));
+      }
+    }
+
+    async function loop() {
+      webcam.update();
+      await predict();
+      window.requestAnimationFrame(loop);
+    }
+
+    async function predict() {
+      const prediction = await model.predict(webcam.canvas);
+      for (let i = 0; i < maxPredictions; i++) {
+        labelContainer.childNodes[i].innerHTML =
+          prediction[i].className + ": " + prediction[i].probability.toFixed(2);
+      }
+    }
+
+    // Changing motivational messages
+    const messages = [
+      "You are strong and capable. No matter the results, you are valued and loved. 💙",
+      "You are not alone. There are people who care about you. 🌟",
+      "Take a deep breath. Everything will be okay. 💕",
+      "No matter what happens, you are brave, beautiful, and resilient. 🌸"
+    ];
+    
+    setInterval(() => {
+      document.getElementById("message").innerText = messages[Math.floor(Math.random() * messages.length)];
+    }, 5000);
+
+  </script>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>
